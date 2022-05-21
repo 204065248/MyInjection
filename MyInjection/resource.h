@@ -5,8 +5,9 @@
 #define IDD_MYINJECTION_DIALOG          102
 #define IDR_MAINFRAME                   128
 #define BTN_INJECTION                   1000
-#define IDC_EDIT1                       1001
 #define EDT_PID                         1001
+#define EDT_PROCESS_NAME                1001
+#define EDT_DLLPATH                     1002
 
 // Next default values for new objects
 // 

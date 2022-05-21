@@ -32,4 +32,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedInjection();
+private:
+	// DLL路径
+	CEdit m_edtDllPath;
 };

@@ -13,7 +13,13 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="MMap">
+    <Filter Include="utils">
+      <UniqueIdentifier>{0c5cc2bd-1fc3-437d-955e-78a59bc8690f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils\process">
+      <UniqueIdentifier>{23b69ab7-59c4-4261-80c6-431b15b72f48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mmap">
       <UniqueIdentifier>{205570ba-a465-4330-846c-69f772c58676}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -36,14 +42,11 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="GetProcAddressR.h">
-      <Filter>MMap</Filter>
+    <ClInclude Include="process.h">
+      <Filter>utils\process</Filter>
     </ClInclude>
-    <ClInclude Include="LoadLibraryR.h">
-      <Filter>MMap</Filter>
-    </ClInclude>
-    <ClInclude Include="ReflectiveDLLInjection.h">
-      <Filter>MMap</Filter>
+    <ClInclude Include="ManualMapInject.h">
+      <Filter>mmap</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -56,11 +59,11 @@
     <ClCompile Include="pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="GetProcAddressR.cpp">
-      <Filter>MMap</Filter>
+    <ClCompile Include="process.cpp">
+      <Filter>utils\process</Filter>
     </ClCompile>
-    <ClCompile Include="LoadLibraryR.cpp">
-      <Filter>MMap</Filter>
+    <ClCompile Include="ManualMapInject.cpp">
+      <Filter>mmap</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

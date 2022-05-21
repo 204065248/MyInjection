@@ -8,11 +8,12 @@
 #include "MyInjectionDlg.h"
 #include "afxdialogex.h"
 
-#include "LoadLibraryR.h"
+#include "process.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+#include "ManualMapInject.h"
 
 // CMyInjectionDlg 对话框
 
@@ -25,6 +26,7 @@ CMyInjectionDlg::CMyInjectionDlg(CWnd* pParent /*=nullptr*/)
 
 void CMyInjectionDlg::DoDataExchange(CDataExchange* pDX) {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, EDT_DLLPATH, m_edtDllPath);
 }
 
 BEGIN_MESSAGE_MAP(CMyInjectionDlg, CDialogEx)
@@ -83,65 +85,63 @@ HCURSOR CMyInjectionDlg::OnQueryDragIcon() {
 
 
 void CMyInjectionDlg::OnBnClickedInjection() {
-	char* cpDllFile = "test.dll";
 	HANDLE hProcess = NULL;
-	LPVOID lpBuffer = NULL;
+	LPBYTE lpBuffer = NULL;
+
+	CString strDllPath;
+	m_edtDllPath.GetWindowText(strDllPath);
+	if (strDllPath.GetLength() == 0) {
+		AfxMessageBox("请填写需要注入的DLL路径！");
+		return;
+	}
+
 	do {
-		DWORD dwProcessId = GetDlgItemInt(EDT_PID);
-
-		HANDLE hFile = CreateFileA(cpDllFile, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile == INVALID_HANDLE_VALUE)
-			AfxMessageBox("无法打开 DLL 文件");
-
-		DWORD dwLength = GetFileSize(hFile, NULL);
-		if (dwLength == INVALID_FILE_SIZE || dwLength == 0)
-			AfxMessageBox("获取 DLL 文件大小失败");
-
-		// 创建缓冲区
-		lpBuffer = HeapAlloc(GetProcessHeap(), 0, dwLength);
-		if (!lpBuffer)
-			AfxMessageBox("获取 DLL 文件大小失败");
-
-		// 将DLL数据复制到缓冲区
-		DWORD dwBytesRead = 0;
-		if (ReadFile(hFile, lpBuffer, dwLength, &dwBytesRead, NULL) == FALSE)
-			AfxMessageBox("分配缓冲区失败!");
-
-		// 进程提权
-		HANDLE hToken = NULL;
-		if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
-			TOKEN_PRIVILEGES priv = { 0 };
-			priv.PrivilegeCount = 1;
-			priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-			if (LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &priv.Privileges[0].Luid))
-				AdjustTokenPrivileges(hToken, FALSE, &priv, 0, NULL, NULL);
-
-			CloseHandle(hToken);
+		CString strProcessName;
+		GetDlgItemText(EDT_PROCESS_NAME, strProcessName);
+		if (strProcessName.GetLength() == 0) {
+			AfxMessageBox("请填写需要注入的进程名！");
+			break;
 		}
 
+		auto pids = CProcess::GetProcessIDByName(strProcessName.GetString());
+		if (pids.size() == 0) {
+			AfxMessageBox("未找到相关进程！");
+			break;
+		}
+
+		// 进程提权
+		CProcess::ElevatePrivilegesCurrentProcess();
+
 		// 打开目标进程
-		hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, dwProcessId);
-		if (!hProcess)
+		hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, pids[0]);
+		if (!hProcess) {
 			AfxMessageBox("打开目标进程失败");
+			break;
+		}
 
-		// 将DLL写到目标进程，并创建远程线程
-		HANDLE hModule = LoadRemoteLibraryR(hProcess, lpBuffer, dwLength, NULL);
-		if (!hModule)
-			AfxMessageBox("注入DLL失败");
+		CFile file;
+		file.Open(strDllPath, CFile::modeRead);
+		ULONGLONG nFileSize = file.GetLength();
+		lpBuffer = new BYTE[nFileSize]{};
+		file.SeekToBegin();
+		file.Read(lpBuffer, nFileSize);
+		file.Close();
 
-		CString strFmt;
-		strFmt.Format("[+] 将“%s”DLL 注入进程 %d。", cpDllFile, dwProcessId);
-		AfxMessageBox(strFmt);
+		CManualMapInject inject;
+		if (inject.InjectorDLL(lpBuffer, nFileSize, hProcess)) {
+			AfxMessageBox("注入成功");
+		} else {
+			AfxMessageBox("注入失败");
+		}
 
-		WaitForSingleObject(hModule, -1);
 
 	} while (0);
 
-	if (lpBuffer)
-		HeapFree(GetProcessHeap(), 0, lpBuffer);
+	if (lpBuffer != nullptr) {
+		delete[] lpBuffer;
+	}
 
-	if (hProcess)
+	if (hProcess != NULL) {
 		CloseHandle(hProcess);
-
+	}
 }
